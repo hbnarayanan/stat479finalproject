@@ -1,0 +1,101 @@
+---
+title: 'Milestone 2'
+author: "Harshita Narayanan"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    highlight: tango
+    fig_caption: no
+  pdf_document: default
+classoption: letterpaper
+documentclass: article
+---
+
+```{r,warning = FALSE, message = FALSE}
+# libraries used
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(shiny)
+library(readr)
+library(ggplot2)
+library(ggridges)
+```
+
+```{r}
+analytics<-read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+```
+
+```{r}
+analytics %>% 
+  drop_na() %>% 
+  arrange(-HourlyRate)
+```
+
+```{r}
+analytics %>%
+     count(JobLevel,JobSatisfaction,Attrition) %>% 
+  ggplot()+
+geom_bar(aes(x=JobLevel,y=n,fill=Attrition),stat="identity")+
+  facet_grid(~JobSatisfaction)+
+  labs(title="Job Level and Job Satistfaction vs Attrition Counts",x="Job Level",y="Attrition Counts",subtitle="Faceted by Job Satisfaction")
+  # geom_point(aes(x=JobLevel,y=JobSatisfaction,color=Attrition))
+```
+
+
+```{r}
+analytics %>% 
+   count(JobRole,Attrition)%>% 
+  ggplot()+
+  geom_bar(aes(x=reorder(JobRole,n),y=n,fill=Attrition),stat="identity")+
+  coord_flip()+
+  labs(title="Job Role vs Attrition Counts",x="Job Role",y="Attrition Counts")
+```
+
+```{r}
+analytics %>% 
+  select(TotalWorkingYears,Attrition) %>% 
+  count(TotalWorkingYears,Attrition) %>% 
+  ggplot() +
+  geom_bar(aes(x=TotalWorkingYears,y=n,fill=Attrition),stat="identity")+
+  labs(title="Attrition Counts vs Years at Company",x="Years At Company",y="Attrition Counts")
+```
+
+```{r}
+analytics %>% 
+   group_by(BusinessTravel,Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%  
+  ggplot()+
+  geom_bar(aes(x=BusinessTravel,y=freq,fill=Attrition),stat="identity")
+```
+```{r}
+analytics %>% 
+  select(Gender, MaritalStatus, Attrition) %>% 
+  group_by(Gender, MaritalStatus, Attrition) %>% 
+    summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%  
+  ggplot()+
+  geom_bar(aes(x=Gender,y=freq,fill=Attrition),stat="identity")+
+  facet_grid(~MaritalStatus)
+```
+
+```{r}
+analytics %>% 
+    select(YearsAtCompany,YearsSinceLastPromotion,Attrition, OverTime) %>% 
+  count(YearsAtCompany, YearsSinceLastPromotion,Attrition, OverTime) %>% 
+  ggplot(aes(x=YearsAtCompany,y=YearsSinceLastPromotion,color=Attrition))+
+  # geom_jitter()+
+  geom_smooth(method="lm",se=FALSE)
+  # facet_grid(~Attrition)
+```
+
+```{r,fig.height=10,fig.width=10}
+#correlation matrix for numeric columns
+library(corrplot)
+  
+num_dat=select_if(analytics, is.numeric) %>% 
+  select(-c(EmployeeCount,StandardHours))
+corrplot(cor(num_dat))
+```
+
