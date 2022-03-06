@@ -1,0 +1,86 @@
+---
+title: "ProjectMilestone2"
+author: "Ayushi Mishra"
+date: "3/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(patchwork)
+library(ggrepel)
+library(ggridges)
+```
+
+
+
+```{r}
+job <- read_csv("WA_Fn-UseC_-HR-Employee-Attrition.csv")
+head(job)
+```
+
+
+```{r}
+ggplot(job, aes(HourlyRate, JobRole, fill = Attrition)) +
+  geom_density_ridges()  
+```
+
+
+
+
+```{r}
+env_prop <- job %>%
+  group_by(EnvironmentSatisfaction, Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n/sum(n)) %>%
+  mutate(perc = round(freq * 100, 2))
+
+ggplot(env_prop) +
+  geom_col(aes(EnvironmentSatisfaction, freq, 
+        fill = Attrition)) 
+```
+
+
+```{r}
+edu_prop <- job %>%
+  group_by(EducationField, Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(percentage = round((n/sum(n)) * 100, 2))
+
+ggplot(edu_prop) +
+  geom_bar(aes(EducationField, n, 
+        fill = Attrition, group = Attrition), stat='identity', position = 'dodge') + 
+  geom_text(aes(x = EducationField, y = n, group = Attrition, label = paste0(percentage, "%")), position = position_dodge(width = 1),
+    vjust = -0.5, size = 2)
+```
+
+
+
+```{r}
+dep_prop <- job %>%
+  group_by(Department, Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(percentage = round((n/sum(n)) * 100, 2))
+
+ggplot(dep_prop) +
+  geom_bar(aes(Department, n, 
+        fill = Attrition, group = Attrition), stat='identity', position = 'dodge') + 
+  geom_text(aes(x = Department, y = n, group = Attrition, label = paste0(percentage, "%")), position = position_dodge(width = 1),
+    vjust = -0.5, size = 2)
+```
+
+
+
+
+```{r}
+p1 <- ggplot(job, aes(x = MonthlyIncome, y = ..count.., fill = Attrition)) +
+  geom_density(alpha = 0.8) +
+  scale_x_continuous(expand = expansion(0))
+
+p2 <- ggplot(job, aes(x = Age, y = ..count.., fill = Attrition)) +
+  geom_density(alpha = 0.8) +
+  scale_x_continuous(expand = expansion(0))
+
+p1/p2
+```
+
