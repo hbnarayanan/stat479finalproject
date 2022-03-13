@@ -169,4 +169,8 @@ ggplot(cbind(job, PC), aes(PC1, PC2, col = Attrition, alpha = Attrition))+
   theme_bw() +
   theme(legend.position = "bottom")
 ```
-
+```{r}
+data %>%
+  ggplot()+
+  geom_histogram(aes(Education, fill = Attrition)) 
+```
