@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(patchwork)
 library(ggrepel)
 library(ggridges)
+library(corrplot)
 ```
 
 
@@ -84,9 +85,88 @@ p2 <- ggplot(job, aes(x = Age, y = ..count.., fill = Attrition)) +
 p1/p2
 ```
 
-```{r}
-data %>%
-  ggplot()+
-  geom_histogram(aes(Education, fill = Attrition)) 
 
+```{r}
+job %>%
+     count(JobLevel,JobSatisfaction,Attrition) %>% 
+  ggplot()+
+geom_bar(aes(x=JobLevel,y=n,fill=Attrition),stat="identity")+
+  facet_grid(~JobSatisfaction)+
+  labs(title="Job Level and Job Satistfaction vs Attrition Counts",x="Job Level",y="Attrition Counts",subtitle="Faceted by Job Satisfaction")
+  # geom_point(aes(x=JobLevel,y=JobSatisfaction,color=Attrition))
 ```
+
+
+```{r}
+job %>% 
+   count(JobRole,Attrition)%>% 
+  ggplot()+
+  geom_bar(aes(x=reorder(JobRole,n),y=n,fill=Attrition),stat="identity")+
+  coord_flip()+
+  labs(title="Job Role vs Attrition Counts",x="Job Role",y="Attrition Counts")
+```
+
+```{r}
+job %>% 
+  select(TotalWorkingYears,Attrition) %>% 
+  count(TotalWorkingYears,Attrition) %>% 
+  ggplot() +
+  geom_bar(aes(x=TotalWorkingYears,y=n,fill=Attrition),stat="identity")+
+  labs(title="Attrition Counts vs Years at Company",x="Years At Company",y="Attrition Counts")
+```
+
+```{r}
+job %>% 
+   group_by(BusinessTravel,Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%  
+  ggplot()+
+  geom_bar(aes(x=BusinessTravel,y=freq,fill=Attrition),stat="identity")
+```
+
+```{r}
+job %>% 
+  select(Gender, MaritalStatus, Attrition) %>% 
+  group_by(Gender, MaritalStatus, Attrition) %>% 
+    summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%  
+  ggplot()+
+  geom_bar(aes(x=Gender,y=freq,fill=Attrition),stat="identity")+
+  facet_grid(~MaritalStatus)
+```
+
+```{r}
+job %>% 
+    select(YearsAtCompany,YearsSinceLastPromotion,Attrition, OverTime) %>% 
+  count(YearsAtCompany, YearsSinceLastPromotion,Attrition, OverTime) %>% 
+  ggplot(aes(x=YearsAtCompany,y=YearsSinceLastPromotion,color=Attrition))+
+  # geom_jitter()+
+  geom_smooth(method="lm",se=FALSE)
+  # facet_grid(~Attrition)
+```
+
+```{r,fig.height=10,fig.width=10}
+#correlation matrix for numeric columns
+#less correlated: HourlyRate, MonthlyRate, PercentSalaryHike, TrainingTimesLastYear, NumCompaniesWorked
+
+non_useful <- c("EmployeeCount", "StandardHours", "EmployeeNumber", "DailyRate", "DistanceFromHome", "Education", "JobInvolvement", "JobSatisfaction", "JobSatisfaction", "PerformanceRating", "EnvironmentSatisfaction", "JobLevel", "RelationshipSatisfaction", "StockOptionLevel", "WorkLifeBalance", "HourlyRate", "MonthlyRate", "PercentSalaryHike", "TrainingTimesLastYear", "NumCompaniesWorked")
+  
+num_dat=select_if(job, is.numeric) %>% 
+  select(-non_useful)
+corrplot(cor(num_dat), method = "number")
+```
+```{r}
+pca_data <- num_dat%>%
+        prcomp(scale = TRUE)
+PC <- data.frame(pca_data$x[,c(1,2)])
+```
+
+
+```{r}
+ggplot(cbind(job, PC), aes(PC1, PC2, col = Attrition, alpha = Attrition))+
+  scale_alpha_discrete(range = c(0.3, 1))+
+  geom_point() + 
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
