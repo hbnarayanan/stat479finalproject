@@ -84,3 +84,9 @@ p2 <- ggplot(job, aes(x = Age, y = ..count.., fill = Attrition)) +
 p1/p2
 ```
 
+```{r}
+data %>%
+  ggplot()+
+  geom_histogram(aes(Education, fill = Attrition)) 
+
+```
