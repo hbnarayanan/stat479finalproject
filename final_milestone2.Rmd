@@ -1,0 +1,243 @@
+---
+title: "Project Milestone 2"
+author: "Harshita Narayanan, Ayushi Mishra, Neil Bhutada"
+date:   "`r format(Sys.time(), '%d %B, %Y')`" # autogenerate date as date of last knit
+documentclass: article
+classoption: letterpaper
+output:
+  html_document:
+    highlight: tango
+    fig_caption: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(patchwork)
+library(ggrepel)
+library(ggridges)
+library(corrplot)
+library(tidyverse)
+```
+
+
+
+```{r include=FALSE}
+job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+head(job)
+```
+
+***Correlation Matrix for Numerical Variables***
+
+```{r,fig.height=8,fig.width=8}
+#correlation matrix for numeric columns
+#less correlated: HourlyRate, MonthlyRate, PercentSalaryHike, TrainingTimesLastYear, NumCompaniesWorked
+
+non_useful <- c("EmployeeCount", "StandardHours", "EmployeeNumber", "DailyRate", "DistanceFromHome", "Education", "JobInvolvement", "JobSatisfaction", "JobSatisfaction", "PerformanceRating", "EnvironmentSatisfaction", "JobLevel", "RelationshipSatisfaction", "StockOptionLevel", "WorkLifeBalance", "HourlyRate", "MonthlyRate", "PercentSalaryHike", "TrainingTimesLastYear", "NumCompaniesWorked")
+  
+num_dat = select_if(job, is.numeric) %>% 
+  dplyr::select(-non_useful)
+corrplot(cor(num_dat), method = "number")
+```
+
+***PCA with the Numerical Variables***
+
+```{r}
+pca_data <- num_dat%>%
+        prcomp(scale = TRUE)
+PC <- data.frame(pca_data$x[,c(1,2)])
+```
+
+
+```{r}
+ggplot(cbind(job, PC), aes(PC1, PC2, col = Attrition, alpha = Attrition))+
+  scale_alpha_discrete(range = c(0.3, 1))+
+  geom_point() + 
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) +
+  ggtitle("PCA for most influential numerical features")
+```
+
+***EDA for Categorical Variables***
+
+```{r}
+env_prop <- job %>%
+  group_by(EnvironmentSatisfaction, Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n/sum(n)) %>%
+  mutate(perc = round(freq * 100, 2))
+
+ggplot(env_prop) +
+  geom_col(aes(EnvironmentSatisfaction, freq, 
+        fill = Attrition)) +
+  labs(title="Proportion of Environment Satisfaction and Attrition") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+  
+```
+
+
+```{r fig.height=4, fig.width=7}
+edu_prop <- job %>%
+  group_by(EducationField, Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(percentage = round((n/sum(n)) * 100, 2))
+
+ggplot(edu_prop) +
+  geom_bar(aes(y=EducationField, x=n, 
+        fill = Attrition, group = Attrition), stat='identity', position = 'dodge') + 
+  geom_text(aes(y = EducationField, x = n, group = Attrition, label = paste0(percentage, "%")), position = position_dodge(width = 1),
+    vjust = -0.5, size = 2)+
+  labs(title="Education Field vs Attrition",
+       x="Number of People") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+
+```{r}
+dep_prop <- job %>%
+  group_by(Department, Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(percentage = round((n/sum(n)) * 100, 2))
+
+ggplot(dep_prop) +
+  geom_bar(aes(Department, n, 
+        fill = Attrition, group = Attrition), stat='identity', position = 'dodge') + 
+  geom_text(aes(x = Department, y = n, group = Attrition, label = paste0(percentage, "%")), position = position_dodge(width = 1),
+    vjust = -0.5, size = 2)+
+  labs(title="Department vs Attrition Frequency",y="Number of People") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+
+```{r}
+job %>%
+     count(JobLevel,JobSatisfaction,Attrition) %>% 
+  ggplot()+
+geom_bar(aes(x=JobLevel,y=n,fill=Attrition),stat="identity")+
+  facet_grid(~JobSatisfaction)+
+  labs(title="Job Level and Job Satistfaction vs Attrition Frequency",
+       x="Job Level",
+       y="Attrition Frequency",
+       subtitle="Faceted by Job Satisfaction") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold")) 
+
+```
+
+
+```{r}
+job %>% 
+   count(JobRole,Attrition)%>% 
+  ggplot()+
+  geom_bar(aes(x=reorder(JobRole,n),y=n,fill=Attrition),stat="identity")+
+  coord_flip()+
+  labs(title="Job Role vs Attrition Frequency",
+       x="Job Role",
+       y="Attrition Frequency") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+
+
+```{r}
+job %>% 
+   group_by(BusinessTravel,Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%  
+  ggplot()+
+  geom_bar(aes(x=BusinessTravel,y=freq,fill=Attrition),stat="identity")+
+  labs(title="Business Travel vs Attrition Frequency",
+       x="Business Travel",
+       y="Attrition Frequency") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+
+```{r}
+job %>% 
+  dplyr::select(Gender, MaritalStatus, Attrition) %>% 
+  group_by(Gender, MaritalStatus, Attrition) %>% 
+    summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%  
+  ggplot()+
+  geom_bar(aes(x=Gender,y=freq,fill=Attrition),stat="identity")+
+  facet_grid(~MaritalStatus)+
+  labs(title="Marital Status vs Attrition Frequency",
+       x="Marital Status",
+       y="Attrition Frequency") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+
+```{r}
+job %>%
+  ggplot()+
+  geom_histogram(aes(Education, fill = Attrition)) +
+  labs(title="Education Level vs Attrition Frequency",
+       x="Education Level",
+       y="Attrition Frequency") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+***EDA for Numerical Variables*** 
+
+```{r}
+ggplot(job, aes(HourlyRate, JobRole, fill = Attrition)) +
+  geom_density_ridges() +
+  labs(title="Density Graph of Job Role and Hourly Rate vs Attrition") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+```{r}
+p1 <- ggplot(job, aes(x = MonthlyIncome, y = ..count.., fill = Attrition)) +
+  geom_density(alpha = 0.8) +
+  scale_x_continuous(expand = expansion(0))+
+  labs(title="Attrition Based on Monthly Income",x="Monthly Income",y="Attrition Counts") +
+  theme_bw() 
+
+p2 <- ggplot(job, aes(x = Age, y = ..count.., fill = Attrition)) +
+  geom_density(alpha = 0.8) +
+  scale_x_continuous(expand = expansion(0))+
+  labs(title="Attrition Based on Age",
+       x="Age",
+       y="Attrition Counts") +
+  theme_bw() 
+
+p1/p2
+  
+```
+
+
+```{r}
+job %>% 
+  dplyr::select(TotalWorkingYears,Attrition) %>% 
+  count(TotalWorkingYears,Attrition) %>% 
+  ggplot() +
+  geom_bar(aes(x=TotalWorkingYears,y=n,fill=Attrition),stat="identity")+
+  labs(title="Attrition Counts vs Years at Company",
+       x="Years At Company",
+       y="Attrition Counts") +
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+```
+
+```{r}
+job %>% 
+  dplyr::select(YearsAtCompany,YearsSinceLastPromotion,Attrition, OverTime) %>% 
+  count(YearsAtCompany, YearsSinceLastPromotion,Attrition, OverTime) %>% 
+  ggplot(aes(x=YearsAtCompany,y=YearsSinceLastPromotion,color=Attrition))+
+  geom_smooth(method="lm",se=FALSE)+
+  labs(title="Years Since Last Promotion vs Years At Company",
+       x="Years At Company",
+       y="Years Since Last Promotion") + 
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5)) 
+ 
+```
