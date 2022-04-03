@@ -1,0 +1,44 @@
+---
+title: "project_milestone3"
+author: "Ayushi Mishra"
+date: "4/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+library(tidyverse)
+library(lubridate)
+```
+
+
+```{r}
+job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+job
+```
+
+```{r}
+categorical <- c('Department', 'BusinessTravel', 'EducationField', 'Gender', 'JobRole', 'MaritalStatus', 'OverTime')
+numerical <- c('DailyRate', 'DistanceFromHome', 'HourlyRate', 'MonthlyIncome', 'MonthlyRate', 'NumCompaniesWorked', 'PercentSalaryHike', 'TotalWorkingYears', 'YearsAtCompany', 'YearsAtCompany', 'YearsInCurrentRole', 'YearsSinceLastPromotion', 'YearsWithCurrManager')
+
+ ui <- fluidPage(
+   titlePanel("Feature Comparision for an employee"),
+   selectInput("var1", "First Variable", categorical),
+   selectInput("var2", "Second Variable", numerical),
+   plotOutput("density")
+ )
+ 
+ server <- function(input, output) {
+   
+    output$density <- renderPlot({
+      ggplot(job, aes(x = .data[[input$var2]], y = .data[[input$var1]], fill = Attrition)) +
+      geom_density_ridges() +
+      labs(title = paste0("Density Graph of ", input$var1, " and ", input$var2, " vs Attrition")) +
+      theme_bw() +
+      theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5))
+    })
+ }
+ shinyApp(ui, server)
+```
+
