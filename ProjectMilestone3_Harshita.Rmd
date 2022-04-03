@@ -1,0 +1,80 @@
+---
+title: "ProjectMilestone3"
+author: "Harshita Narayanan"
+date: "4/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(shiny)
+```
+
+
+
+```{r}
+job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+```
+
+
+```{r}
+ui <- fluidPage(
+  titlePanel("Heart Disease Trends Across Different Ages and Health Factors"),
+  h5("Please pick an age range for BOTH of the plots below."),
+  selectInput("ages", "Ages", ages, multiple = FALSE),
+  h3("Heart Disease Trend Between Ages and Diseases"),
+  h5(
+    "For the plot below, please pick a health condition to explore. Hovering over the bars allows you to see all the associated statistics."
+  ),
+  selectInput("var1", "Health Condition", colnames(disease)[c(3, 4, 5, 8, 9, 11, 12, 13, 14, 16, 17, 18)]),
+  plotlyOutput("barplot"),
+  h3("Heart Disease Trend Between Ages, Sleep Time and BMI"),
+  h5(
+    "Brush the histogram to select the trends in BMI and Heart Disease that are associated with the selected age and number of hours of sleep. Note: The density plot will regenerated after a selection is made."
+  ),
+  plotOutput("histogram1", brush = brushOpts("plot_brush", direction = "x")),
+  plotOutput("density")
+  
+)
+
+server <- function(input, output) {
+  samples <- reactive({
+    selected(T)
+    age_calc(disease, input)
+    
+  })
+  
+  selected <- reactiveVal(rep(TRUE, nrow(disease)))
+  
+  observeEvent(req(input$plot_brush),
+               selected(reset_selection(samples(), req(input$plot_brush))))
+  
+  
+  
+  output$barplot <- renderPlotly({
+    barplot_fun(samples(), input)
+  })
+  
+  output$histogram1 <- renderPlot({
+    histogram_fun(samples())
+  })
+  
+  
+  output$density <- renderPlot({
+    req(filter(samples(), selected()) > 0)
+    density_fun(filter(samples(), selected()))
+  })
+  
+  
+}
+
+
+
+shinyApp(ui, server)
+```
+
