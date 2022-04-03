@@ -24,51 +24,34 @@ job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_
 
 ```{r}
 ui <- fluidPage(
-  titlePanel("Heart Disease Trends Across Different Ages and Health Factors"),
-  h5("Please pick an age range for BOTH of the plots below."),
-  selectInput("ages", "Ages", ages, multiple = FALSE),
-  h3("Heart Disease Trend Between Ages and Diseases"),
-  h5(
-    "For the plot below, please pick a health condition to explore. Hovering over the bars allows you to see all the associated statistics."
-  ),
-  selectInput("var1", "Health Condition", colnames(disease)[c(3, 4, 5, 8, 9, 11, 12, 13, 14, 16, 17, 18)]),
-  plotlyOutput("barplot"),
-  h3("Heart Disease Trend Between Ages, Sleep Time and BMI"),
-  h5(
-    "Brush the histogram to select the trends in BMI and Heart Disease that are associated with the selected age and number of hours of sleep. Note: The density plot will regenerated after a selection is made."
-  ),
-  plotOutput("histogram1", brush = brushOpts("plot_brush", direction = "x")),
-  plotOutput("density")
+  titlePanel("HR Attrition Analysis of Categorical Variables"),
+selectInput("var1", "First Variable", colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)]),
+selectInput("facet", "Facet By", colnames(job)[c(5,3,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)]),
+  plotlyOutput("barplot")
+  
   
 )
 
+
+
+
 server <- function(input, output) {
-  samples <- reactive({
-    selected(T)
-    age_calc(disease, input)
-    
-  })
+
   
-  selected <- reactiveVal(rep(TRUE, nrow(disease)))
+output$barplot <- renderPlotly({
+  job %>% 
+   # count(.data[[input$var1]], .data[[input$facet]],Attrition) %>% 
+    group_by(.data[[input$var1]], .data[[input$facet]],Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%
+ggplot() +
+geom_bar(aes(x=.data[[input$var1]],y=freq,fill=Attrition),stat="identity")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))+
+      facet_grid(~.data[[input$facet]])+
+    labs(title = paste0("Frequency of Attrition in ", input$var1, " faceted by ", input$facet),x=paste0(input$var1),y="Attrition Frequency") 
+})
   
-  observeEvent(req(input$plot_brush),
-               selected(reset_selection(samples(), req(input$plot_brush))))
-  
-  
-  
-  output$barplot <- renderPlotly({
-    barplot_fun(samples(), input)
-  })
-  
-  output$histogram1 <- renderPlot({
-    histogram_fun(samples())
-  })
-  
-  
-  output$density <- renderPlot({
-    req(filter(samples(), selected()) > 0)
-    density_fun(filter(samples(), selected()))
-  })
+
   
   
 }
@@ -77,4 +60,6 @@ server <- function(input, output) {
 
 shinyApp(ui, server)
 ```
+
+
 
