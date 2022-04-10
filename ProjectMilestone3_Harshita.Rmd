@@ -29,11 +29,14 @@ z <- job %>%
      select(MaritalStatus, StockOptionLevel,Attrition) %>% 
      mutate(MaritalStatus=as.factor(MaritalStatus),StockOptionLevel=as.factor(StockOptionLevel),Attrition=as.factor(Attrition)) 
 
-   mod.c <- glm(Attrition ~ MaritalStatus+StockOptionLevel, data = z, family=binomial(link = "logit"))
+   mod.c <- glm(Attrition ~ MaritalStatus*StockOptionLevel, data = z, family=binomial(link = "logit"))
    # 
    
    
-   names(lrtest(mod.c))
+   # names(lrtest(mod.c))
+   mod.c
+   x=lrtest(mod.c)
+   x$`Pr(>Chisq)`[2]
 ```
 
 
@@ -118,4 +121,6 @@ shinyApp(ui, server)
 ```{r}
 
 ```
+
+
 
