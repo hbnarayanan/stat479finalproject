@@ -1,0 +1,121 @@
+---
+title: "ProjectMilestone3"
+author: "Harshita Narayanan"
+date: "4/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(shiny)
+library(plotly)
+library(readr)
+library(dplyr)
+library(lmtest)
+```
+
+
+
+```{r}
+job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+```
+```{r}
+z <- job %>% 
+     select(MaritalStatus, StockOptionLevel,Attrition) %>% 
+     mutate(MaritalStatus=as.factor(MaritalStatus),StockOptionLevel=as.factor(StockOptionLevel),Attrition=as.factor(Attrition)) 
+
+   mod.c <- glm(Attrition ~ MaritalStatus+StockOptionLevel, data = z, family=binomial(link = "logit"))
+   # 
+   
+   
+   names(lrtest(mod.c))
+```
+
+
+```{r}
+ui <- fluidPage(
+  titlePanel("HR Attrition Analysis of Categorical Variables"),
+selectInput("var1", "First Variable", colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)]),
+selectInput("facet", "Facet By", colnames(job)[c(5,3,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)]),
+  plotlyOutput("barplot"),
+textOutput("text")
+  
+  
+)
+
+
+
+server <- function(input, output) {
+# 
+  datachisquare <- reactive({
+    # req(input$var1, input$facet)
+
+    job %>%
+  {
+    table(.[[input$var1]],.[[input$facet]])
+  }
+
+  #     select(input$var1,input$facet,Attrition)
+  })
+output$barplot <- renderPlotly({
+  job %>% 
+   # count(.data[[input$var1]], .data[[input$facet]],Attrition) %>% 
+    group_by(.data[[input$var1]], .data[[input$facet]],Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%
+ggplot() +
+geom_bar(aes(x=.data[[input$var1]],y=freq,fill=Attrition),stat="identity")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))+
+      facet_grid(~.data[[input$facet]])+
+    labs(title = paste0("Frequency of Attrition in ", input$var1, " faceted by ", input$facet),x=paste0(input$var1),y="Attrition Frequency") 
+})
+
+
+
+ output$text <- renderPrint({
+   # print(datachisquare())
+   # x=table(job$Attrition,datachisquare())
+   # job %>% 
+   #   select(MaritalStatus, StockOptionLevel,Attrition) %>% 
+   #   mutate(MaritalStatus=as.factor(MaritalStatus),StockOptionLevel=as.factor(StockOptionLevel),Attrition=as.factor(Attrition)) %>% 
+   # mod.c <- glm(Attrition ~ MaritalStatus+StockOptionLevel, family=binomial(link = "logit"))
+   # # 
+   # lrtest(mod.c)
+   
+  #  job<- job %>% 
+  #    select(MaritalStatus, StockOptionLevel,Attrition) %>% 
+  #    mutate(MaritalStatus=as.factor(MaritalStatus),StockOptionLevel=as.factor(StockOptionLevel),Attrition=as.factor(Attrition)) 
+  # 
+  #  mod.c <- glm(Attrition ~ MaritalStatus+StockOptionLevel, data = job, family=binomial(link = "logit"))
+  #  # 
+  #  z=lrtest(mod.c)
+  # z$`Pr(>Chisq)`
+    x=chisq.test(datachisquare())
+
+   {paste("Chi-squared test p-value=", x$p.value)}
+ })
+  
+
+  
+  
+}
+
+
+
+shinyApp(ui, server)
+
+
+#multiple correspondence analysis
+#chi-square test and get a p-value
+```
+
+
+```{r}
+
+```
+
