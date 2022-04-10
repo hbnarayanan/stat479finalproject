@@ -1,0 +1,57 @@
+---
+title: "FinalProject2"
+author: "Neil Bhutada"
+date: "4/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(tidyverse)
+library(randomForest)
+library(tree)
+library(datasets)
+library(caret)
+```
+
+
+
+```{r}
+job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+
+char <- sapply(job, is.character)
+col_names <- names(job[,char])
+
+num <- sapply(job, is.numeric)
+names <- names(job[,num])
+
+job[col_names] <- lapply(job[col_names], factor)
+
+model <- glm(Attrition ~ Age + NumCompaniesWorked + MonthlyRate + YearsSinceLastPromotion + DailyRate + Department + EducationField + JobRole + BusinessTravel + MaritalStatus + Gender + OverTime + YearsWithCurrManager + YearsInCurrentRole + TotalWorkingYears + YearsAtCompany + PercentSalaryHike + HourlyRate + MonthlyIncome + TrainingTimesLastYear, data = job, family = binomial) %>% stepAIC(trace = TRUE)
+```
+
+```{r}
+set.seed(222)
+ind <- sample(2, nrow(job), replace = TRUE, prob = c(0.7, 0.3))
+train <- job[ind==1,]
+test <- job[ind==2,]
+
+train = sample (1:nrow(job), nrow(job)/2)
+rf = randomForest(formula = Attrition ~ Age + NumCompaniesWorked + YearsSinceLastPromotion + 
+    DailyRate + EducationField + JobRole + BusinessTravel + MaritalStatus + 
+    Gender + OverTime + YearsWithCurrManager + YearsInCurrentRole + 
+    YearsAtCompany + TrainingTimesLastYear, data = job, proximity = TRUE, subset = train)
+print(rf)
+```
+
+Out of bag error is 14.56%, so the train data set model accuracy is around 85.44%.
+
+```{r}
+p1 <- predict(rf, test)
+confusionMatrix(p1, test$Attrition)
+```
+```{r}
+plot(rf)
+```
+
