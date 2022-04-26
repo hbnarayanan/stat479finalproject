@@ -1,0 +1,133 @@
+---
+title: "ProjectMilestone3"
+author: "Harshita Narayanan"
+date: "4/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(magrittr)
+library(shiny)
+library(plotly)
+library(readr)
+library(lmtest)
+
+```
+
+
+
+```{r}
+job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+```
+
+
+```{r}
+
+# ex_df=tibble(var1_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)],
+# var2_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)])
+# att=job$Attrition 
+# ex_df =ex_df %>% 
+#   expand(var1_names,var2_names) %>% 
+#   filter(!duplicated(paste0(pmax(var1_names, var2_names), pmin(var1_names, var2_names)))) %>% 
+#   filter(var1_names!=var2_names) 
+# vector = c()
+# for(var1 in ex_df$var1_names){
+#   for(var2 in ex_df$var2_names){
+# 
+#        mod.b <- glm(as.factor(job$Attrition) ~ as.factor(job[var1])*as.factor(job[var2]), data = job, family=binomial(link = "logit"))
+# 
+#     x=lrtest(mod.b)
+# 
+#     vector <- c(vector, x$`Pr(>Chisq)`[2])
+#   }
+# 
+# }
+
+
+
+
+```
+
+
+
+```{r}
+ui <- fluidPage(
+  titlePanel("HR Attrition Analysis of Categorical Variables"),
+selectInput("var1", "First Variable", colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)]),
+selectInput("facet", "Facet By", colnames(job)[c(5,3,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)]),
+  plotlyOutput("barplot"),
+textOutput("text")
+  
+  
+)
+job_calc <- function(job, input) {
+  
+    job %>%
+      select(input$var1,input$facet,Attrition) %>% 
+           mutate(variable1=as.factor(.data[[input$var1]]),variable2=as.factor(.data[[input$facet]]),Attrition=as.factor(Attrition)) 
+  
+}
+
+
+server <- function(input, output) {
+  
+  datalrt <- reactive({
+        # job_calc(job,input)
+    job %>%
+      select(input$var1,input$facet,Attrition) %>% 
+          mutate(variable1=as.factor(.data[[input$var1]]),variable2=as.factor(.data[[input$facet]]),Attrition=as.factor(Attrition))
+
+
+  })
+output$barplot <- renderPlotly({
+
+  job %>% 
+
+    group_by(.data[[input$var1]], .data[[input$facet]],Attrition) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%
+ggplot() +
+geom_bar(aes(x=.data[[input$var1]],y=freq,fill=Attrition),stat="identity")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))+
+      facet_grid(~.data[[input$facet]])+
+    labs(title = paste0("Frequency of Attrition in ", input$var1, " faceted by ", input$facet),x=paste0(input$var1),y="Attrition Frequency") 
+})
+
+
+
+ output$text <- renderText({
+ 
+  
+data_lrt=datalrt()
+  
+
+   mod.c <- glm(Attrition ~ variable1 + variable2 + variable1:variable2, data =data_lrt, family=binomial(link = "logit"))
+
+    x=lrtest(mod.c, glm(Attrition ~ variable1 + variable2, data =data_lrt, family=binomial(link = "logit")))
+    
+   {paste("LRT (Likelihood Ratio Test) p-value=", x$`Pr(>Chisq)`[2])}  
+
+ })
+  
+
+  
+  
+}
+
+
+
+
+
+shinyApp(ui, server)
+```
+
+
