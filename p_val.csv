@@ -1,0 +1,14 @@
+var1,var2,p_value
+BusinessTravel,JobInvolment,0.0429595670020811
+Department,MaritalStatus,0.0445056976434276
+Education,JobInvolment,0.0191093653992949
+EducationField,JobRole,0
+EducationField,MaritalStatus,0.0528379326641401
+EducationField,TrainingTimesLastYear,0
+EnvironmentSatisfaction,JobInvolment,0.0457897465189065
+JobInvolvment,StockOptionLevel,0.029501294052459
+JobRole,RelationshipSatisfaction,0.00398705025676076
+JobRole,WorkLifeBalance,0.0437651074572955
+MaritalStatus,PerformanceRating,0.0170592404616937
+MaritalStatus,RelationshipSatisfaction,0.0576270852128398
+RelationshipSatisfaction,TrainingTimesLastYear,0.0436930937774786
