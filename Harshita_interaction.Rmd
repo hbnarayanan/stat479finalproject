@@ -28,49 +28,40 @@ library(lmtest)
 ```{r}
 job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
 
-p_val=read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/p_val.csv")
+
 ```
 
 
 ```{r}
 
-# ex_df=tibble(var1_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)],
-# var2_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)])
-# att=job$Attrition
-# ex_df =ex_df %>%
-#   expand(var1_names,var2_names) %>%
-#   filter(!duplicated(paste0(pmax(var1_names, var2_names), pmin(var1_names, var2_names)))) %>%
-#   filter(var1_names!=var2_names)
-# 
-# 
-# 
-# 
-# 
-# vector = c()
-# for(i in 1:nrow(ex_df)){
-#   # print(nrow(job[ex_df$var1_names[i]]))
-#   # print(nrow(job[ex_df$var2_names[i]]))
-#   # print(nrow(job["Attrition"]))
-# mod.b=glm(Attrition ~ job[ex_df$var1_names[i]] + job[ex_df$var2_names[i]] + job[ex_df$var1_names[i]]:job[ex_df$var2_names[i]], data =job, family=binomial(link = "logit"))
-# 
-#     x=lrtest(mod.b, glm(Attrition ~ ex_df$var1_names[i] + ex_df$var2_names[i], data =job, family=binomial(link = "logit")))
-# 
-#     vector <- c(vector, x$`Pr(>Chisq)`[2])
-#   
-# 
-# }
+ ex_df=tibble(var1_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)],
+ var2_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)])
+ att=job$Attrition
+ex_df =ex_df %>%
+  expand(var1_names,var2_names) %>%
+   filter(!duplicated(paste0(pmax(var1_names, var2_names), pmin(var1_names, var2_names)))) %>%
+   filter(var1_names!=var2_names)
 
-# new_df=ex_df %>%
-#   mutate(p_val=vector)
+
+
+ vector = c()
+for(i in 1:nrow(ex_df)){
+
+ mod.b=glm(as.factor(job[["Attrition"]]) ~ as.factor(job[[ex_df$var1_names[i]]]) + as.factor(job[[ex_df$var2_names[i]]]) + as.factor(job[[ex_df$var1_names[i]]]):as.factor(job[[ex_df$var2_names[i]]]), family=binomial(link = "logit"))
+
+  x=lrtest(mod.b, glm(as.factor(job[["Attrition"]]) ~ as.factor(job[[ex_df$var1_names[i]]]) + as.factor(job[[ex_df$var2_names[i]]]), family=binomial(link = "logit")))
+
+     vector <- c(vector, x$`Pr(>Chisq)`[2])
+ }
+
+ new_df=ex_df %>%
+   mutate(p_val=vector) %>% 
+   filter(p_val<0.1) 
 
 
 ```
 
-```{r}
 
-# p_val %>% slice_min(p_value, n = 10) %>% 
-#   rename(variable1=var1,variable2=var2)
-```
 
 
 ```{r}
@@ -80,6 +71,7 @@ selectInput("var1", "First Variable", colnames(job)[c(3,5,7,8,11,12,14,15,16,17,
 selectInput("facet", "Facet By", colnames(job)[c(5,3,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)]),
   plotlyOutput("barplot"),
 textOutput("text"),
+h3("Top 10 Categorical Variable Combinations that Interact the Most with Attrition"),
 dataTableOutput("pval_table")
 
 )
@@ -132,8 +124,7 @@ data_lrt=datalrt()
 
  })
    output$pval_table <- renderDataTable({
-     p_val %>% slice_min(p_value, n = 10) %>% 
-  rename(variable1=var1,variable2=var2)
+    new_df
   })
  
 
