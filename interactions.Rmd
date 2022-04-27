@@ -1,0 +1,227 @@
+---
+title: "ProjectMilestone3"
+author: "Harshita Narayanan"
+date: "4/3/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(magrittr)
+library(shiny)
+library(plotly)
+library(readr)
+library(lmtest)
+library(ggridges)
+library(ggplot2)
+
+```
+
+
+
+```{r}
+job <- read_csv("https://github.com/hbnarayanan/stat479finalproject/raw/main/hr_analytics.csv")
+
+categorical <- c("BusinessTravel", "Department" , "EducationField", "Gender" ,"JobRole", "MaritalStatus" , "OverTime","Education",
+                 "EnvironmentSatisfaction","JobInvolvement",  "JobLevel", "JobSatisfaction","PerformanceRating",   "RelationshipSatisfaction", "StockOptionLevel","WorkLifeBalance"  )      
+col_names <- names(job[,categorical])
+col_names <- c(col_names, "Attrition")
+job[col_names] <- lapply(job[col_names], factor)
+
+numeric <- c("Age", "DailyRate", "DistanceFromHome","HourlyRate"  ,  "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked"     
+,"PercentSalaryHike"  ,"TotalWorkingYears","TrainingTimesLastYear","YearsAtCompany","YearsInCurrentRole", "YearsSinceLastPromotion" ,"YearsWithCurrManager")
+```
+
+
+```{r}
+
+ ex_df=tibble(var1_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)],
+ var2_names=colnames(job)[c(3,5,7,8,11,12,14,15,16,17,18,23,25,26,28,30,31)])
+ att=job$Attrition
+ex_df =ex_df %>%
+  expand(var1_names,var2_names) %>%
+   filter(!duplicated(paste0(pmax(var1_names, var2_names), pmin(var1_names, var2_names)))) %>%
+   filter(var1_names!=var2_names)
+
+
+
+ vector = c()
+for(i in 1:nrow(ex_df)){
+
+ mod.b=glm((job[["Attrition"]]) ~ (job[[ex_df$var1_names[i]]]) + (job[[ex_df$var2_names[i]]]) + (job[[ex_df$var1_names[i]]]):(job[[ex_df$var2_names[i]]]), family=binomial(link = "logit"))
+
+  x=lrtest(mod.b, glm((job[["Attrition"]]) ~ (job[[ex_df$var1_names[i]]]) + (job[[ex_df$var2_names[i]]]), family=binomial(link = "logit")))
+
+     vector <- c(vector, x$`Pr(>Chisq)`[2])
+ }
+
+ new_df=ex_df %>%
+   mutate(p_val=vector) 
+
+```
+
+```{r}
+new_df
+```
+
+```{r}
+
+ 
+
+ 
+a <- data.frame(matrix(nrow = 0, ncol = 4))
+ 
+ 
+for(variable1 in categorical){
+  for(variable2 in numeric){
+ 
+    mod.c <- glm(job[["Attrition"]] ~ job[[variable1]] + job[[variable2]] + job[[variable1]]:job[[variable2]], family=binomial(link = "logit"))
+    x=lrtest(mod.c, glm(job[["Attrition"]] ~ job[[variable1]] + job[[variable2]], family=binomial(link = "logit")))
+  
+    
+    a <- rbind(a, list(variable1, variable2, x$`Pr(>Chisq)`[2]))
+  }
+}
+ 
+colnames(a) <- c("Categorical", "Numerical", "PValue")
+a
+```
+
+
+```{r}
+ui <- fluidPage(
+  titlePanel("HR Attrition Analysis of Categorical Variables"),
+  sliderInput("slider", "Chose P-Value range", min = 0, max = 1, value = c(0, 0.05)),
+  fluidRow(column(6, DT::dataTableOutput("output1"), height = 500),
+           column(6, plotOutput("density"), height = 500)),
+   fluidRow(column(6, DT::dataTableOutput("output2"), height = 500),
+           column(6, plotOutput("barplot"), height = 500))
+
+
+)
+# job_calc <- function(job, input) {
+#   
+#     job %>%
+#       select(input$var1,input$facet,Attrition) %>% 
+#            mutate(variable1=(.data[[input$var1]]),variable2=(.data[[input$facet]]),Attrition=(Attrition)) 
+#   
+# }
+
+
+server <- function(input, output) {
+  
+#   datalrt <- reactive({
+#         # job_calc(job,input)
+#     job %>%
+#       select(input$var1,input$facet,Attrition) %>% 
+#           mutate(variable1=(.data[[input$var1]]),variable2=(.data[[input$facet]]),Attrition=(Attrition))
+# 
+# 
+#   })
+# output$barplot <- renderPlotly({
+# 
+#   job %>% 
+# 
+#     group_by(.data[[input$var1]], .data[[input$facet]],Attrition) %>%
+#   summarise(n = n()) %>%
+#   mutate(freq = n / sum(n)) %>%
+# ggplot() +
+# geom_bar(aes(x=.data[[input$var1]],y=freq,fill=Attrition),stat="identity")+
+#   theme(axis.text.x = element_text(angle = 45, hjust=1))+
+#       facet_grid(~.data[[input$facet]])+
+#     labs(title = paste0("Frequency of Attrition in ", input$var1, " faceted by ", input$facet),x=paste0(input$var1),y="Attrition Frequency") 
+# })
+# 
+# 
+# 
+#  output$text <- renderText({
+#  
+#   
+# data_lrt=datalrt()
+#   
+# 
+#    mod.c <- glm(Attrition ~ variable1 + variable2 + variable1:variable2, data =data_lrt, family=binomial(link = "logit"))
+# 
+#     x=lrtest(mod.c, glm(Attrition ~ variable1 + variable2, data =data_lrt, family=binomial(link = "logit")))
+#     
+#    {paste("LRT (Likelihood Ratio Test) p-value=", x$`Pr(>Chisq)`[2])}  
+# 
+#  })
+#    output$pval_table <- renderDataTable({
+#     new_df
+#   })
+ 
+cat_num <- reactive({
+  a%>%
+    filter(PValue >= input$slider[1] & PValue <= input$slider[2])
+})
+
+cat_cat <- reactive({
+    new_df%>%
+    filter(p_val >= input$slider[1] & p_val <= input$slider[2])
+})
+  
+output$"output2" <- renderDataTable({
+ cat_cat()
+  
+}, class="compact cell-border", selection = "single")
+
+ output$"output1" <- renderDataTable({
+  cat_num()
+  
+}, class="compact cell-border", selection = "single") 
+ 
+   output$density <- renderPlot({
+     
+    
+    s <- input$output1_rows_selected
+    if(length(s)){
+      row <- cat_num()[s, ]
+      ggplot(job, aes(x = .data[[row$Numerical]], y = .data[[row$Categorical]], fill = Attrition)) +
+        geom_density_ridges() +
+        labs(title = paste0("Density Graph of ", row$Categorical, " and ", row$Numerical, " vs Attrition")) +
+        theme_bw() +
+        theme(legend.position = "bottom", plot.title = element_text(face = "bold", hjust = 0.5))
+    }
+    
+  })
+   
+output$barplot <- renderPlot({
+
+  s <- input$output2_rows_selected
+    if(length(s)){
+      row <- cat_cat()[s, ]
+        d2 <- job %>%
+          group_by(.data[[row$var1_names]], .data[[row$var2_names]],Attrition) %>%
+          summarise(n = n()) %>%
+          mutate(freq = n / sum(n))
+          
+          ggplot(d2,aes(x=.data[[row$var1_names]],y=freq,fill=Attrition) ) +
+geom_bar(stat="identity")+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))+
+      facet_grid(~.data[[row$var2_names]])+
+    labs(title = paste0("Frequency of Attrition in ", row$var1_names, " faceted by ", row$var2_names),x=paste0(row$var1_names),y="Attrition Frequency")
+    }
+  
+
+})
+  
+  
+    
+}
+
+
+
+
+
+shinyApp(ui, server)
+```
+
