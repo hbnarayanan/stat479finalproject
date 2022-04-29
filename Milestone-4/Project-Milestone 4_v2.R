@@ -25,6 +25,7 @@ library(rpart.plot)
 library(DALEX)
 library(scales)
 library(shinycssloaders)
+library(stringr)
 
 ###Pre-processing###
 
@@ -234,22 +235,6 @@ customLogo <- shinyDashboardLogoDIY(
   
 )
 
-mytheme <- create_theme(
-  adminlte_color(
-    light_blue = "#434C5E"
-  ),
-  adminlte_sidebar(
-    width = "300px",
-    dark_bg = "#D8DEE9",
-    dark_hover_bg = "#81A1C1",
-    dark_color = "#2E3440"
-  ),
-  adminlte_global(
-    content_bg = "#FFF",
-    box_bg = "#D8DEE9", 
-    info_box_bg = "#D8DEE9"
-  )
-)
 
 ui <- dashboardPage(skin = "blue",
                     dashboardHeader(title = customLogo,
@@ -308,18 +293,18 @@ ui <- dashboardPage(skin = "blue",
                                   In Fig 3.1, interactions between various numerical and categorical features were analyzed. The respective P-values from the LRT tests are stored in the corresponding data table.
                                   Ridge Density plots can be observed upon clicking a row in the first table. Similarly, In Fig 3.2, interactions between various categorical variables were analyzed.
                                   Faceted bar plots can be observed on clicking a row in the second table. Move the slider to filter feature interactions based on P-Values from the LRT Tests."),
-                                sliderInput("slider", "Chose P-Value range", min = 0, max = 1, value = c(0, 0.05), width = "600px"),
+                                sliderInput("slider", "Chose P-Value range", min = 0, max = 1e-1, value = c(0, 1e-1/2), width = "600px"),
                                 h4("Click on a row of the Data Table to see a density plot depicting correlation between numerical features"),
                                 fluidRow(
                                   box(title = "Categorical-Numerical Interactions LRT", status = "warning", solidHeader = TRUE, withSpinner(DT::dataTableOutput("output1"))),
-                                  box(title = "Ridge Density plots for Categorical-Numerical Interactions with Attrition", status = "warning",  solidHeader = TRUE, withSpinner(plotOutput("density")))
+                                  box(title = "Ridge-Density plots for Categorical-Numerical Interaction with Attrition", status = "warning",  solidHeader = TRUE, withSpinner(plotOutput("density")))
                                 ),
                                 
                                 
                                 h4("Click on a row of the Data Table to see a bar plot depicting correlation between categorical features"),
                                 fluidRow(
                                   box(title = "Categorical-Categorical Interactions LRT", status = "warning", solidHeader = TRUE, withSpinner(DT::dataTableOutput("output2"))),
-                                  box(title = "Bar plots for Categorical-Categorical Interactions with Attrition", status = "warning",  solidHeader = TRUE, withSpinner(plotOutput("barplot")))
+                                  box(title = "Bar plots for Categorical-Categorical Interaction with Attrition", status = "warning",  solidHeader = TRUE, withSpinner(plotOutput("barplot")))
                                 )
                                 
                                 
@@ -409,13 +394,16 @@ server <- function(input, output) {
   
   output$"output2" <- renderDataTable({
     cat_cat() %>%
-      dplyr::rename("Categorical Feature 1" = "var1_names", 
-                    "Categorical Feature 2" = "var2_names", 
-                    "PValue" = "p_val")
+      dplyr::rename("Categorical 1" = "var1_names", 
+                    "Categorical 2" = "var2_names", 
+                    "PValue" = "p_val") %>% 
+      mutate(PValue=round(PValue,2))
     
   }, class="compact cell-border", selection = "single")
   output$"output1" <- renderDataTable({
-    cat_num()
+    cat_num() %>% 
+ 
+      mutate(PValue=round(PValue, 2))
     
   }, class="compact cell-border", selection = "single") 
   
@@ -446,7 +434,7 @@ server <- function(input, output) {
         group_by(.data[[row$var1_names]], .data[[row$var2_names]],Attrition) %>%
         summarise(n = n()) %>%
         mutate(freq = n / sum(n))
-      
+      #geom_bar width=0.9 or 1
       ggplot(d2,aes(y=.data[[row$var1_names]],x=freq,fill=Attrition) ) +
         geom_bar(stat="identity")+
         theme(axis.text.x = element_text(angle = 45, hjust=1))+
@@ -454,7 +442,10 @@ server <- function(input, output) {
         facet_grid(.data[[row$var2_names]]~.)+
         labs(title = paste0("Frequency of Attrition in ", row$var1_names, " faceted by ", row$var2_names),x=paste0(row$var1_names),
              y="Proportions", 
-             subtitle = "Fig 3.2")
+             subtitle = "Fig 3.2") +
+        theme_bw() +
+        theme(axis.text.y = element_text(size = 8),
+              strip.text.y = element_text(size = 6))
     }
     
   })
