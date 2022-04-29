@@ -450,6 +450,7 @@ server <- function(input, output) {
       ggplot(d2,aes(y=.data[[row$var1_names]],x=freq,fill=Attrition) ) +
         geom_bar(stat="identity")+
         theme(axis.text.x = element_text(angle = 45, hjust=1))+
+        scale_x_continuous(expand = c(0,0)) +
         facet_grid(.data[[row$var2_names]]~.)+
         labs(title = paste0("Frequency of Attrition in ", row$var1_names, " faceted by ", row$var2_names),x=paste0(row$var1_names),
              y="Proportions", 
