@@ -443,8 +443,8 @@ server <- function(input, output) {
         theme(axis.text.x = element_text(angle = 45, hjust=1))+
         scale_x_continuous(expand = c(0,0)) +
         facet_grid(str_wrap(.data[[row$var2_names]], width = 8)~.)+
-        labs(title = paste0("Frequency of Attrition in ", row$var1_names, " faceted by ", row$var2_names),x=paste0(row$var1_names),
-             y="Proportions", 
+        labs(title = paste0("Frequency of Attrition in ", row$var1_names, " faceted by ", row$var2_names),y=paste0(row$var1_names),
+             x="Proportions", 
              subtitle = "Fig 3.2") +
         theme_bw() +
         theme(axis.text.y = element_text(size = 8),
