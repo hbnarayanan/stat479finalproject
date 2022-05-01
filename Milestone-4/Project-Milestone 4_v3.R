@@ -385,11 +385,13 @@ server <- function(input, output) {
   ###Harshita's & Ayushi's code 
   cat_num <- reactive({
     combinations %>%
-      filter(PValue >= input$slider[1] & PValue <= input$slider[2])
+      filter(PValue >= input$slider[1] & PValue <= input$slider[2]) %>% 
+      arrange(PValue)
   })
   cat_cat <- reactive({
     new_df %>%
-      filter(p_val >= input$slider[1] & p_val <= input$slider[2])
+      filter(p_val >= input$slider[1] & p_val <= input$slider[2]) %>% 
+      arrange(p_val)
   })
   
   output$"output2" <- renderDataTable({
@@ -419,7 +421,7 @@ server <- function(input, output) {
       ggplot(job, aes(x = .data[[row$Numerical]], y = as.factor(.data[[row$Categorical]]), fill = Attrition)) +
         geom_density_ridges() +
         labs(title = paste0("Density Graph of ", row$Categorical, " and ", row$Numerical, " vs Attrition"), 
-             subtitle = "Fig 3.1") +
+             subtitle = "Fig 3.1",y=paste0(row$Categorical)) +
         theme_bw() +
         theme(legend.position = "bottom", 
               plot.title = element_text(face = "bold", hjust = 0.5), 
