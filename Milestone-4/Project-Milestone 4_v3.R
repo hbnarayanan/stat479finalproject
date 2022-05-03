@@ -297,7 +297,7 @@ ui <- dashboardPage(skin = "blue",
                                   Fig 2.1 shows the Decision Tree that we created for our analysis. The left branch represents when a node satisfy the condition based on feature is satisfied and vice-versa
                                   for the right. Fig 2.2 shows Ceteris Paribus Profiles for 'Years at Company' and 'Age', and allowing the user to group these profiles by the influential categorical predictors."),
                                 box(title = "Decision Tree Graph", withSpinner(plotOutput("tree", height = "500px")), status = "warning", solidHeader = TRUE, width = 13), 
-                                box(title = "Partial Dependency Profiles", selectInput("cat_var", "Choosea categorical predictor", c("EducationField", "JobRole",  "BusinessTravel", "MaritalStatus","Gender",  "OverTime")), withSpinner(plotOutput("profiles")), status = "warning", solidHeader = TRUE,  width = 13)
+                                box(title = "Partial Dependency Profiles", selectInput("cat_var", "Choose a categorical predictor", c("EducationField", "JobRole",  "BusinessTravel", "MaritalStatus","Gender",  "OverTime")), withSpinner(plotOutput("profiles")), status = "warning", solidHeader = TRUE,  width = 13)
                         ),
                         
                         # Third tab content
