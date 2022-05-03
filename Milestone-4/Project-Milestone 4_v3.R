@@ -204,7 +204,22 @@ for(i in 1:nrow(ex_df)) {
 new_df <- ex_df %>%
   mutate(p_val = vector) 
 
-###Randorm Forest Part
+
+responsive_plot <- function(index_val, data_table){
+
+
+  
+  row <- data_table[index_val, ]
+  facet_length <- length(unique(job[[row$var2_names]]))
+ 400 + facet_length* 11.5
+  
+
+  
+ 
+  
+}
+
+## Decision Tree Part
 
 best_predictors <- c("Age", "NumCompaniesWorked", "YearsSinceLastPromotion","DailyRate","EducationField", "JobRole",  "BusinessTravel", "MaritalStatus", 
                      "Gender",  "OverTime",  "YearsWithCurrManager", "YearsInCurrentRole", 
@@ -303,8 +318,8 @@ ui <- dashboardPage(skin = "blue",
                                 
                                 h4("Click on a row of the Data Table to see a bar plot depicting correlation between categorical features"),
                                 fluidRow(
-                                  box(title = "Categorical-Categorical Interactions LRT", status = "warning", solidHeader = TRUE, withSpinner(DT::dataTableOutput("output2"))),
-                                  box(title = "Bar plots for Categorical-Categorical Interaction with Attrition", status = "warning",  solidHeader = TRUE, withSpinner(plotOutput("barplot")))
+                                  box(title = "Categorical-Categorical Interactions LRT", status = "warning", solidHeader = TRUE, withSpinner(DT::dataTableOutput("output2")), height = 500),
+                                  box(title = "Bar plots for Categorical-Categorical Interaction with Attrition", status = "warning",  solidHeader = TRUE, withSpinner(plotOutput("barplot")), height = 500)
                                 )
                                 
                                 
@@ -362,7 +377,7 @@ server <- function(input, output) {
   })
   
   
-  ### Random Forest Code
+  ### Decision Tree Code
   
   
   output$tree <- renderPlot({
@@ -400,24 +415,24 @@ server <- function(input, output) {
                     "Categorical 2" = "var2_names", 
                     "PValue" = "p_val") %>% 
       mutate(PValue=round(PValue,6))
-
+    
     
   }, class="compact cell-border", selection = "single")
   output$"output1" <- renderDataTable({
     cat_num() %>% 
- 
+      
       mutate(PValue=round(PValue, 6)) 
-
+    
     
   }, class="compact cell-border", selection = "single") 
   
   output$density <- renderPlot({
-
+    
     
     s <- input$output1_rows_selected
     if(length(s)){
       row <- cat_num()[s, ]
-
+      
       ggplot(job, aes(x = .data[[row$Numerical]], y = as.factor(.data[[row$Categorical]]), fill = Attrition)) +
         geom_density_ridges() +
         labs(title = paste0("Density Graph of ", row$Categorical, " and ", row$Numerical, " vs Attrition"), 
@@ -430,6 +445,9 @@ server <- function(input, output) {
     }
     
   })
+
+  
+
   
   output$barplot <- renderPlot({
     s <- input$output2_rows_selected
@@ -440,6 +458,10 @@ server <- function(input, output) {
         summarise(n = n()) %>%
         mutate(freq = n / sum(n))
       #geom_bar width=0.9 or 1
+      
+     
+      
+      
       ggplot(d2,aes(y=.data[[row$var1_names]],x=freq,fill=Attrition) ) +
         geom_bar(stat="identity")+
         theme(axis.text.x = element_text(angle = 45, hjust=1))+
@@ -449,11 +471,24 @@ server <- function(input, output) {
              x="Proportions", 
              subtitle = "Fig 3.2") +
         theme_bw() +
-        theme(axis.text.y = element_text(size = 8),
-              strip.text.y = element_text(size = 6))
+        theme(axis.text.y = element_text(size = 10),
+              strip.text.y = element_text(size = 8, face = "bold"))
     }
     
-  })
+  }, height = reactive({
+    index <- input$output2_rows_selected
+    if(length(index)){
+    responsive_plot(index, cat_cat())
+    }
+    else{
+      
+      200
+    }
+    }
+    
+    )
+  
+  )
   
   
   
