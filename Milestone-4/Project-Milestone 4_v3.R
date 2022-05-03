@@ -211,7 +211,7 @@ responsive_plot <- function(index_val, data_table){
   
   row <- data_table[index_val, ]
   facet_length <- length(unique(job[[row$var2_names]]))
- 400 + facet_length* 11.5
+ 400 + facet_length* 12
   
 
   
